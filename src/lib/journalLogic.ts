@@ -1,44 +1,14 @@
 import { Entry, MoodDistribution, MoodLevel, StreakStats, Tag, TagStat } from '../types/journal';
 
-export const MOOD_DEFINITIONS: Record<
-  MoodLevel,
-  { label: string; emoji: string; color: string; bgClass: string; textClass: string }
-> = {
-  1: {
-    label: 'Rough',
-    emoji: '🌧️',
-    color: '#475569', // deep slate/gray blue
-    bgClass: 'bg-slate-600',
-    textClass: 'text-slate-600',
-  },
-  2: {
-    label: 'Low',
-    emoji: '☁️',
-    color: '#8b5cf6', // muted purple
-    bgClass: 'bg-purple-500',
-    textClass: 'text-purple-500',
-  },
-  3: {
-    label: 'Okay',
-    emoji: '⛅',
-    color: '#eab308', // soft warm yellow
-    bgClass: 'bg-amber-500',
-    textClass: 'text-amber-500',
-  },
-  4: {
-    label: 'Good',
-    emoji: '🌤️',
-    color: '#22c55e', // light calm green
-    bgClass: 'bg-emerald-500',
-    textClass: 'text-emerald-500',
-  },
-  5: {
-    label: 'Great',
-    emoji: '☀️',
-    color: '#f97316', // bright warm sun orange/gold
-    bgClass: 'bg-orange-500',
-    textClass: 'text-orange-500',
-  },
+export const MOOD_LEVELS: MoodLevel[] = [1, 2, 3, 4, 5];
+
+// Diverging scale: cool for low moods, neutral midpoint, warm for good ones.
+export const MOOD_DEFINITIONS: Record<MoodLevel, { label: string; emoji: string; color: string }> = {
+  1: { label: 'Rough', emoji: '🌧️', color: '#2a64ad' },
+  2: { label: 'Low', emoji: '☁️', color: '#7ea6d8' },
+  3: { label: 'Okay', emoji: '⛅', color: '#cdc8bf' },
+  4: { label: 'Good', emoji: '🌤️', color: '#ef9244' },
+  5: { label: 'Great', emoji: '☀️', color: '#d2581f' },
 };
 
 export function getTodayDateString(date = new Date()): string {
@@ -234,15 +204,82 @@ export function validateBackupData(data: unknown): { isValid: boolean; error?: s
     return { isValid: false, error: 'Invalid or missing "entries" list in backup' };
   }
 
-  for (const item of obj.entries) {
-    if (!item.id || !item.date || typeof item.mood !== 'number' || item.mood < 1 || item.mood > 5) {
+  const entries: Entry[] = [];
+  const seenDates = new Set<string>();
+  for (const raw of obj.entries) {
+    const item = raw as Record<string, unknown>;
+    const mood = Number(item?.mood);
+    if (
+      !item ||
+      typeof item.id !== 'string' ||
+      typeof item.date !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(item.date) ||
+      !Number.isInteger(mood) ||
+      mood < 1 ||
+      mood > 5
+    ) {
       return { isValid: false, error: 'One or more entries are corrupted or missing required fields' };
     }
+    if (seenDates.has(item.date)) continue; // one entry per day; keep the first
+    seenDates.add(item.date);
+    const energy = Number(item.energy);
+    const now = new Date().toISOString();
+    entries.push({
+      id: item.id,
+      date: item.date,
+      title: typeof item.title === 'string' ? item.title : '',
+      body: typeof item.body === 'string' ? item.body : '',
+      mood: mood as MoodLevel,
+      energy: Number.isInteger(energy) && energy >= 1 && energy <= 5 ? (energy as Entry['energy']) : undefined,
+      prompt: typeof item.prompt === 'string' ? item.prompt : undefined,
+      tagIds: Array.isArray(item.tagIds) ? item.tagIds.filter((t): t is string => typeof t === 'string') : [],
+      createdAt: typeof item.createdAt === 'string' ? item.createdAt : now,
+      updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : now,
+    });
   }
 
-  return {
-    isValid: true,
-    entries: obj.entries as Entry[],
-    tags: Array.isArray(obj.tags) ? (obj.tags as Tag[]) : undefined,
-  };
+  const tags = Array.isArray(obj.tags)
+    ? (obj.tags as Record<string, unknown>[])
+        .filter((t) => t && typeof t.id === 'string' && typeof t.name === 'string')
+        .map((t) => ({ id: t.id as string, name: t.name as string, color: typeof t.color === 'string' ? t.color : '#a39a90' }))
+    : undefined;
+
+  return { isValid: true, entries, tags };
+}
+
+/**
+ * Picks the weekday with the highest average mood, once there is enough data to say anything.
+ */
+export function findBestWeekday(entries: Entry[]): { dayName: string; averageMood: number } | null {
+  const days = calculateWeekdayMood(entries).filter((d) => d.count >= 2);
+  if (days.length < 2) return null;
+  const best = days.reduce((a, b) => (b.averageMood > a.averageMood ? b : a));
+  const fullNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return { dayName: fullNames[best.dayIndex], averageMood: best.averageMood };
+}
+
+export function formatLongDate(dateStr: string): string {
+  return parseDate(dateStr).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+export function countWords(text: string): number {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export function newId(prefix: string): string {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }

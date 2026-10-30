@@ -5,9 +5,9 @@ A production checklist for publishing to Apple App Store & Google Play Store.
 ---
 
 ## 🎨 1. Visual Assets & Branding
-- [ ] **App Icon**: 1024x1024 PNG without transparency (no rounded corners; Apple and Google mask automatically).
-- [ ] **Adaptive Icon (Android)**: Foreground image 432x432 PNG + monochrome background `#faf8f5`.
-- [ ] **Splash Screen**: 2048x2048 centered logo PNG on solid `#faf8f5` canvas.
+- [x] **App Icon**: 1024x1024 PNG without transparency (`assets/icon.png`).
+- [x] **Adaptive Icon (Android)**: foreground + monochrome layers on `#faf7f2` (`assets/android-icon-*.png`).
+- [x] **Splash Screen**: centered mark on `#faf7f2` (light) and `#121214` (dark).
 - [ ] **App Store Screenshots**:
   - 6.7" iPhone (iPhone 16 Pro Max / 15 Pro Max)
   - 6.5" iPhone (iPhone 11 Pro Max / XS Max)
@@ -23,14 +23,14 @@ A production checklist for publishing to Apple App Store & Google Play Store.
 ### Apple App Store Privacy Nutrition Labels
 - **Data Not Collected**: MoodNote is offline-first. Moods, text entries, and journal tags **never leave the user's device**.
 - **Third-Party SDKs**:
-  - **Google Mobile Ads**: Declared as "Identifiers" (Device ID) for Advertising purposes (non-personalized).
-  - **RevenueCat**: Declared as "Purchases" for In-App Purchase functionality.
+  - **RevenueCat** (once connected): declared as "Purchases" for in-app purchases.
+  - No advertising SDKs.
 
 ### Google Play Data Safety Form
 - **Data Collected**: No personal user data collected by the first-party app.
-- **Data Shared**: Device identifiers shared with Google AdMob for ad serving.
+- **Data Shared**: None.
 - **Security Practices**:
-  - Offline-first on-device encrypted storage.
+  - Offline-first on-device storage; the app-lock PIN is kept in the secure keychain.
   - User can request full data deletion directly within app settings (Clear All Data).
 
 ---
@@ -38,6 +38,7 @@ A production checklist for publishing to Apple App Store & Google Play Store.
 ## 📄 3. Legal & Compliance
 - [ ] **Privacy Policy URL**: Hosted public URL explaining zero-retention journal privacy.
 - [ ] **Terms of Use (EULA)**: Apple Standard EULA or custom terms linked on paywall screen.
-- [ ] **Account Deletion / Data Erase**: Meets Apple Guideline 5.1.1 (MoodNote has a single-tap "Clear All Data" in Settings).
+- [ ] **Account Deletion / Data Erase**: Meets Apple Guideline 5.1.1 (MoodNote has "Delete all entries" in Settings).
 - [ ] **In-App Purchase Testing**: Verified Sandbox tester accounts in App Store Connect and Google Play Console.
-- [ ] **Biometrics Permissions**: `NSFaceIDUsageDescription` present in `app.json` with user-friendly copy.
+- [x] **Biometrics Permissions**: `faceIDPermission` set on the `expo-local-authentication` plugin in `app.json`.
+- [ ] **Purchases connected**: `STORE_CONNECTED = true` in `src/services/purchases.ts` (see PUBLISHING_GUIDE.md).

@@ -9,19 +9,15 @@ This handbook walks you through publishing **MoodNote** to the **Apple App Store
 1. **Apple Developer Account** ($99/year) — [developer.apple.com](https://developer.apple.com)
 2. **Google Play Console Account** ($25 one-time) — [play.google.com/console](https://play.google.com/console)
 3. **Expo Account** (Free or On-demand) — [expo.dev](https://expo.dev)
-4. **EAS CLI** installed globally:
-   ```bash
-   npm install -g eas-cli
-   ```
+4. **EAS CLI**, run through npx (`npx eas-cli@latest <command>`). The commands below write `eas` for short.
 
 ---
 
 ## ⚙️ 2. Project Setup & EAS Initialization
 
-Navigate to the `expo-project` directory and log in to your Expo account:
+From the repository root, log in to your Expo account:
 
 ```bash
-cd expo-project
 eas login
 ```
 
@@ -35,24 +31,14 @@ Verify that `eas.json` is configured with production profiles (already provided 
 
 ---
 
-## 🔑 3. Setting Up Production Keys
+## 🔑 3. Connecting In-App Purchases
 
-Before generating a production release, replace the test keys:
+Purchases are simulated in this build (`STORE_CONNECTED = false` in `src/services/purchases.ts`), and the paywall shows a "Test mode" notice.
 
-### A. RevenueCat In-App Purchases
-1. In `src/services/PurchaseService.ts`:
-   - Replace `appl_moodnote_key_placeholder` with your Apple API Key from RevenueCat Dashboard.
-   - Replace `goog_moodnote_key_placeholder` with your Google API Key from RevenueCat Dashboard.
-2. In RevenueCat:
-   - Configure Entitlement: `premium`
-   - Configure Offerings: `monthly`, `yearly` (with 7-day trial), and `lifetime`
-
-### B. Google Mobile Ads (AdMob)
-1. In `app.json` under `react-native-google-mobile-ads`:
-   - Replace `androidAppId` with your production AdMob Android App ID (`ca-app-pub-XXXXXXXX~YYYYYYYY`).
-   - Replace `iosAppId` with your production AdMob iOS App ID (`ca-app-pub-XXXXXXXX~YYYYYYYY`).
-2. In `src/services/AdService.ts`:
-   - Replace test banner and interstitial unit IDs with your production unit IDs.
+1. Install RevenueCat: `npx expo install react-native-purchases` (this needs a development build; it won't run in Expo Go).
+2. In RevenueCat, create the entitlement `premium` and the offerings `monthly`, `yearly` (with a 7-day trial) and `lifetime`.
+3. Implement `purchase()` and `restore()` in `src/services/purchases.ts` with the RevenueCat SDK, read the API keys from `EXPO_PUBLIC_REVENUECAT_IOS_KEY` / `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY`, and set `STORE_CONNECTED = true`.
+4. On launch, check the `premium` entitlement and sync it to `settings.isPremium`.
 
 ---
 
@@ -96,12 +82,12 @@ Alternatively, download the `.ipa` and `.aab` files from your Expo dashboard and
 - **App Privacy Nutrition Labels**:
   - *Data Not Collected*: All journal entries and mood scores remain strictly offline on the user's device.
   - *Data Used to Track You*: None.
-  - *Third-Party SDK Data*: Device identifier (AdMob non-personalized contextual ads) and Purchase history (RevenueCat).
+  - *Third-Party SDK Data*: Purchase history (RevenueCat, once connected). MoodNote shows no ads.
 
 ### Google Play Console:
 - **Category**: Lifestyle
 - **Data Safety Form**:
-  - Does your app collect or share any user data? **Yes** (Device IDs for ad serving; no personal journal data leaves device).
+  - Does your app collect or share any user data? Purchase history only, through the store or RevenueCat. No journal data leaves the device.
   - Is data encrypted in transit? **Yes**.
-  - Can users request data deletion? **Yes** (Single-tap "Reset Data" in Settings).
+  - Can users request data deletion? **Yes** ("Delete all entries" in Settings).
 - **Target Audience**: 13+ or General Audience.

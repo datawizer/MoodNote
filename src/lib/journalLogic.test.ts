@@ -3,11 +3,8 @@ import assert from 'node:assert/strict';
 import {
   calculateStreaks,
   calculateMoodDistribution,
-  calculateWeekdayMood,
   calculateTagCorrelations,
   validateBackupData,
-  getTodayDateString,
-  addDays,
 } from './journalLogic';
 import { Entry, Tag } from '../types/journal';
 

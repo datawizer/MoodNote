@@ -65,7 +65,6 @@ export const DAILY_PROMPTS: DailyPrompt[] = [
 
 export function getPromptForDay(dateStr: string): DailyPrompt {
   const [y, m, d] = dateStr.split('-').map(Number);
-  const dayOfYear = (m - 1) * 31 + d;
-  const index = Math.abs(dayOfYear) % DAILY_PROMPTS.length;
-  return DAILY_PROMPTS[index];
+  const dayNumber = Math.floor(Date.UTC(y, m - 1, d) / 86_400_000);
+  return DAILY_PROMPTS[dayNumber % DAILY_PROMPTS.length];
 }

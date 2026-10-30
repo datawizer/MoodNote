@@ -1,6 +1,0 @@
-{
-  "name": "MoodNote - Daily Journal & Mood Log",
-  "description": "A calm, offline-first daily journal and mood tracker with insights, calendar, themes, and biometric privacy.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
